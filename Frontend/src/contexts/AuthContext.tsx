@@ -26,18 +26,22 @@ const mockUser: User = {
   id: '1',
   name: 'John Doe',
   email: 'john@example.com',
-  role: 'COLLEGE_AUTHORITY'
+  role: null
 };
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [user, setUser] = useState<User | null>(mockUser);
-  const [role, setRole] = useState<UserRole>(mockUser.role);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<UserRole>(null);
 
   const login = (userRole: UserRole) => {
+    const updatedUser = {
+      ...mockUser,
+      role: userRole
+    };
     setIsAuthenticated(true);
     setRole(userRole);
-    setUser(prev => prev ? { ...prev, role: userRole } : mockUser);
+    setUser(updatedUser);
   };
 
   const logout = () => {

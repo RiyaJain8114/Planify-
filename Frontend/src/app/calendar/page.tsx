@@ -20,6 +20,12 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
 } from '@mui/material';
 import EventIcon from '@mui/icons-material/Event';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
@@ -28,6 +34,30 @@ import { format, parseISO, isSameMonth, isSameDay, startOfMonth, endOfMonth, eac
 import Layout from '../../components/layout/Layout';
 import { sampleEvents } from '../events/page';
 import { EventData } from '../../components/events/EventCard';
+
+interface EventLayout extends EventData {
+  row: number;
+  span: number;
+  isStart: boolean;
+  isEnd: boolean;
+}
+
+interface CategoryColors {
+  [key: string]: {
+    background: string;
+    text: string;
+  };
+}
+
+const categoryColors: CategoryColors = {
+  Tech: { background: '#E3F2FD', text: '#1565C0' },
+  Education: { background: '#F3E5F5', text: '#7B1FA2' },
+  Community: { background: '#E8F5E9', text: '#2E7D32' },
+  Sports: { background: '#FFF3E0', text: '#E65100' },
+  Fundraising: { background: '#FFEBEE', text: '#C62828' },
+  Cultural: { background: '#E0F7FA', text: '#00838F' },
+  default: { background: '#F5F5F5', text: '#424242' }
+};
 
 export default function CalendarPage() {
   const router = useRouter();
@@ -38,7 +68,7 @@ export default function CalendarPage() {
   const [selectedEvent, setSelectedEvent] = useState<EventData | null>(null);
   const [eventDialogOpen, setEventDialogOpen] = useState(false);
   const [calendarRows, setCalendarRows] = useState<Date[][]>([]);
-  const [eventLayoutMap, setEventLayoutMap] = useState<Record<string, any>>({});
+  const [eventLayoutMap, setEventLayoutMap] = useState<Map<string, EventLayout[]>>();
 
   useEffect(() => {
     const fetchEvents = async () => {
@@ -57,7 +87,7 @@ export default function CalendarPage() {
           nextWeek.setDate(today.getDate() + 7);
           
           // Create test events with some spanning multiple days
-          const testEvents = [
+          const testEvents: EventData[] = [
             // Multi-day event spanning 3 days starting today
             {
               id: 'test-1',
@@ -71,7 +101,8 @@ export default function CalendarPage() {
               participantsLimit: 25,
               currentParticipants: 15,
               pointsAwarded: 50,
-              organizerName: 'Tech Department'
+              organizerName: 'Tech Department',
+              image: '/images/tech-workshop.jpg'
             },
             // Single day event today
             {
@@ -86,7 +117,8 @@ export default function CalendarPage() {
               participantsLimit: 15,
               currentParticipants: 8,
               pointsAwarded: 10,
-              organizerName: 'Leadership Team'
+              organizerName: 'Leadership Team',
+              image: '/images/education.jpg'
             },
             // Another single day event today (to test stacking)
             {
@@ -101,7 +133,8 @@ export default function CalendarPage() {
               participantsLimit: 20,
               currentParticipants: 12,
               pointsAwarded: 15,
-              organizerName: 'Project Managers'
+              organizerName: 'Project Managers',
+              image: '/images/community.jpg'
             },
             // Multi-day event next week spanning 2 days
             {
@@ -116,45 +149,22 @@ export default function CalendarPage() {
               participantsLimit: 100,
               currentParticipants: 50,
               pointsAwarded: 75,
-              organizerName: 'Community Outreach'
-            },
-            // Sports Day event - completed (past) event
-            {
-              id: 'test-sports-day',
-              title: 'Sports Day Volunteer',
-              description: 'A day of sports activities for differently-abled children. Volunteers needed to help coordinate activities.',
-              startDate: new Date(today.getFullYear(), today.getMonth(), 9).toISOString(),
-              endDate: new Date(today.getFullYear(), today.getMonth(), 9).toISOString(),
-              location: 'City Sports Complex',
-              category: 'Sports',
-              status: 'completed',
-              participantsLimit: 40,
-              currentParticipants: 40,
-              pointsAwarded: 50,
-              organizerName: 'City Paralympics Committee'
-            },
-            // Fundraising Drive - completed (past) event
-            {
-              id: 'test-fundraising',
-              title: 'Fundraising Drive',
-              description: 'Collect funds for new adaptive equipment for local disability centers.',
-              startDate: new Date(today.getFullYear(), today.getMonth(), 16).toISOString(),
-              endDate: new Date(today.getFullYear(), today.getMonth(), 16).toISOString(),
-              location: 'Community Center',
-              category: 'Fundraising',
-              status: 'completed',
-              participantsLimit: 30,
-              currentParticipants: 30,
-              pointsAwarded: 40,
-              organizerName: 'Disability Support Network'
+              organizerName: 'Community Outreach',
+              image: '/images/conference.jpg'
             }
           ];
           
-          // Combine test events with sample events
-          const updatedEvents = [...testEvents, ...sampleEvents.map(event => ({
-            ...event,
-            imageUrl: getIndianEventImage(event.category),
-          }))];
+          // Combine test events with sample events and add image URLs
+          const updatedEvents: EventData[] = [
+            ...testEvents,
+            ...sampleEvents.map(event => ({
+              ...event,
+              imageUrl: getIndianEventImage(event.category),
+              participantsLimit: event.participantLimit || 0,
+              pointsAwarded: event.points || 0,
+              organizerName: event.festOrganizer || 'Unknown Organizer'
+            }))
+          ];
           
           setEvents(updatedEvents);
           setLoading(false);
@@ -221,7 +231,7 @@ export default function CalendarPage() {
   // Function to calculate multi-day event layouts
   const calculateEventLayouts = (rows: Date[][]) => {
     // Map to store layout information for each event
-    const layoutMap: Record<string, any> = {};
+    const layoutMap = new Map<string, EventLayout[]>();
     
     // Helper to get a string ID for a date (for lookups)
     const getDateId = (date: Date) => format(date, 'yyyy-MM-dd');
@@ -276,38 +286,34 @@ export default function CalendarPage() {
             const startDay = row[startCol];
             const startDayId = getDateId(startDay);
             
-            if (!layoutMap[startDayId]) {
-              layoutMap[startDayId] = { events: [] };
+            if (!layoutMap.has(startDayId)) {
+              layoutMap.set(startDayId, []);
             }
             
             // Add event to the start day with colSpan information
-            layoutMap[startDayId].events.push({
-              event,
-              colSpan: endCol - startCol + 1,
-              rowIndex,
-              colIndex: startCol,
+            layoutMap.get(startDayId)?.push({
+              ...event,
+              row: rowIndex,
+              span: endCol - startCol + 1,
               isStart: isSameDay(startDay, startDate),
               isEnd: isSameDay(row[endCol], endDate),
-              position: layoutMap[startDayId].events.length // Used for stacking events
             });
           } else {
             // For single day events, store them individually on their day
             const day = row[startCol];
             const dayId = getDateId(day);
             
-            if (!layoutMap[dayId]) {
-              layoutMap[dayId] = { events: [] };
+            if (!layoutMap.has(dayId)) {
+              layoutMap.set(dayId, []);
             }
             
             // Add single day event
-            layoutMap[dayId].events.push({
-              event,
-              colSpan: 1,
-              rowIndex,
-              colIndex: startCol,
+            layoutMap.get(dayId)?.push({
+              ...event,
+              row: rowIndex,
+              span: 1,
               isStart: true,
               isEnd: true,
-              position: layoutMap[dayId].events.length // Used for stacking events
             });
           }
         }
@@ -401,176 +407,103 @@ export default function CalendarPage() {
     );
   };
 
+  const getEventLayoutForDay = (day: Date, eventLayoutMap: Map<string, EventLayout[]>) => {
+    const dateStr = day.toISOString().split('T')[0];
+    return eventLayoutMap.get(dateStr) || [];
+  };
+
   const renderCalendarDays = () => {
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     
     return (
-      <Box sx={{ width: '100%', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
-          <thead>
-            <tr>
-              {dayNames.map((day) => (
-                <th key={day} style={{ padding: '8px', textAlign: 'center', fontWeight: 'bold' }}>
+      <TableContainer>
+        <Table>
+          <TableHead>
+            <TableRow>
+              {weekDays.map((day) => (
+                <TableCell key={day} align="center" sx={{ fontWeight: 'bold' }}>
                   {day}
-                </th>
+                </TableCell>
               ))}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {calendarRows.map((row, rowIndex) => {
-              // First, collect all events that need to be rendered in this row
-              // and keep track of which columns are occupied by multi-day events
-              const rowEvents: any[] = [];
-              const occupiedCols = new Set<number>();
-              
-              row.forEach((day, colIndex) => {
-                const dayId = format(day, 'yyyy-MM-dd');
-                const dayLayout = eventLayoutMap[dayId];
-                
-                if (dayLayout && dayLayout.events) {
-                  dayLayout.events.forEach((eventLayout: any) => {
-                    // Only process events that start on this day
-                    if (eventLayout.rowIndex === rowIndex && eventLayout.colIndex === colIndex) {
-                      rowEvents.push({
-                        ...eventLayout,
-                        dayId
-                      });
-                      
-                      // Mark columns as occupied for multi-day events
-                      if (eventLayout.colSpan > 1) {
-                        for (let i = colIndex; i < colIndex + eventLayout.colSpan; i++) {
-                          occupiedCols.add(i);
-                        }
-                      }
-                    }
-                  });
-                }
+              // Get all events for this row
+              const rowEvents = row.flatMap(day => {
+                const dateStr = day.toISOString().split('T')[0];
+                return eventLayoutMap?.get(dateStr) || [];
               });
-              
-              // Sort events so multi-day events render first, then by position
-              rowEvents.sort((a, b) => {
-                if (b.colSpan !== a.colSpan) return b.colSpan - a.colSpan;
-                return a.position - b.position;
-              });
-              
+
               return (
-                <tr key={`row-${rowIndex}`} style={{ height: '120px' }}>
+                <TableRow key={rowIndex}>
                   {row.map((day, colIndex) => {
-                    const dayId = format(day, 'yyyy-MM-dd');
+                    const dateStr = day.toISOString().split('T')[0];
                     const isToday = isSameDay(day, new Date());
                     const isCurrentMonth = isSameMonth(day, currentMonth);
-                    
-                    // Skip rendering this cell if it's part of a multi-day event that started earlier
-                    if (occupiedCols.has(colIndex) && !rowEvents.some(e => e.colIndex === colIndex)) {
-                      return null;
-                    }
-                    
-                    // Get events that start on this day in this row
-                    const dayEvents = rowEvents.filter(e => e.colIndex === colIndex);
-                                        
+                    const dayEvents = eventLayoutMap?.get(dateStr) || [];
+
                     return (
-                      <td 
-                        key={`day-${dayId}`}
-                        colSpan={dayEvents.length > 0 && dayEvents[0].colSpan > 1 ? dayEvents[0].colSpan : 1}
-                        style={{ 
-                          padding: '4px',
-                          verticalAlign: 'top',
-                          border: '1px solid #eee',
-                          backgroundColor: isToday ? 'rgba(0, 92, 169, 0.1)' : 'white',
-                          opacity: isCurrentMonth ? 1 : 0.5,
+                      <TableCell
+                        key={colIndex}
+                        sx={{
                           position: 'relative',
-                          height: '100%'
+                          height: '120px',
+                          padding: '8px',
+                          backgroundColor: isToday ? '#E3F2FD' : 'inherit',
+                          color: !isCurrentMonth ? '#bbb' : 'inherit',
+                          border: '1px solid #ddd',
+                          verticalAlign: 'top'
                         }}
                       >
-                        <div style={{ marginBottom: '4px' }}>
-                          <Typography variant="body2" sx={{ fontWeight: isToday ? 'bold' : 'normal' }}>
-                            {format(day, 'd')}
-                          </Typography>
-                        </div>
-                        
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                          {dayEvents.map((eventLayout, i) => {
-                            const { event } = eventLayout;
-                            const startDate = parseISO(event.startDate);
-                            const endDate = parseISO(event.endDate);
-                            
-                            // Different colors for different categories
-                            const categoryColors: Record<string, { bg: string, text: string }> = {
-                              'Tech': { bg: '#E3F2FD', text: '#0D47A1' },
-                              'Education': { bg: '#E8F5E9', text: '#1B5E20' },
-                              'Sports': { bg: '#FFF3E0', text: '#E65100' },
-                              'Cultural': { bg: '#F3E5F5', text: '#7B1FA2' },
-                              'Community': { bg: '#E1F5FE', text: '#01579B' },
-                              'Health': { bg: '#FFEBEE', text: '#B71C1C' },
-                              'Environment': { bg: '#E0F2F1', text: '#004D40' },
-                              'Fundraising': { bg: '#FFF8E1', text: '#FF6F00' }
-                            };
-                            
-                            // Get color based on category, or use default if category is unknown
-                            const defaultColor = { bg: '#ECEFF1', text: '#37474F' };
-                            const eventColor = categoryColors[event.category] || defaultColor;
-                            
-                            // Multi-day events get rounded corners only at start/end
-                            const borderRadius = 
-                              eventLayout.colSpan === 1 ? '4px' :
-                              (eventLayout.isStart && eventLayout.isEnd) ? '4px' :
-                              eventLayout.isStart ? '4px 0 0 4px' :
-                              eventLayout.isEnd ? '0 4px 4px 0' : '0';
-                            
-                            return (
-                              <div 
-                                key={`event-${event.id}-${i}`}
-                                onClick={() => handleEventClick(event)}
-                                style={{
-                                  backgroundColor: eventColor.bg,
-                                  color: eventColor.text,
-                                  padding: '4px 6px',
-                                  borderRadius,
-                                  fontSize: '0.75rem',
-                                  overflow: 'hidden',
-                                  textOverflow: 'ellipsis',
-                                  whiteSpace: 'nowrap',
-                                  cursor: 'pointer',
-                                  fontWeight: 500,
-                                  width: '100%',
-                                  marginBottom: '2px',
-                                  borderLeft: eventLayout.colSpan > 1 ? `3px solid ${eventColor.text}` : 'none',
-                                  boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-                                }}
-                              >
-                                {event.title}
-                              </div>
-                            );
-                          })}
-                        </div>
-                        
-                        {/* More events indicator */}
-                        {dayEvents.length > 3 && (
-                          <div
-                            style={{
-                              color: 'var(--mui-palette-primary-main)',
-                              fontSize: '0.75rem',
-                              cursor: 'pointer',
-                              marginTop: '2px'
-                            }}
-                            onClick={() => {
-                              if (dayEvents.length > 0) {
-                                handleEventClick(dayEvents[3].event);
-                              }
-                            }}
-                          >
-                            +{dayEvents.length - 3} more
-                          </div>
-                        )}
-                      </td>
+                        <Typography variant="body2" sx={{ marginBottom: '8px' }}>
+                          {format(day, 'd')}
+                        </Typography>
+                        <Box sx={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '4px',
+                          maxHeight: '80px',
+                          overflowY: 'auto'
+                        }}>
+                          {dayEvents.map((event, eventIndex) => (
+                            <Box
+                              key={`${event.id}-${eventIndex}`}
+                              onClick={() => handleEventClick(event)}
+                              sx={{
+                                backgroundColor: categoryColors[event.category]?.background || categoryColors.default.background,
+                                color: categoryColors[event.category]?.text || categoryColors.default.text,
+                                padding: '4px 8px',
+                                borderRadius: event.span === 1 ? '4px' :
+                                  (event.isStart && event.isEnd) ? '4px' :
+                                  event.isStart ? '4px 0 0 4px' :
+                                  event.isEnd ? '0 4px 4px 0' : '0',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                border: `1px solid ${categoryColors[event.category]?.text || categoryColors.default.text}20`,
+                                '&:hover': {
+                                  filter: 'brightness(0.95)',
+                                  transform: 'translateY(-1px)',
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                }
+                              }}
+                            >
+                              {event.title}
+                            </Box>
+                          ))}
+                        </Box>
+                      </TableCell>
                     );
                   })}
-                </tr>
+                </TableRow>
               );
             })}
-          </tbody>
-        </table>
-      </Box>
+          </TableBody>
+        </Table>
+      </TableContainer>
     );
   };
 

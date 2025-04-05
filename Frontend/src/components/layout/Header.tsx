@@ -84,7 +84,7 @@ export default function Header() {
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: 'center' }}>
       <Typography variant="h6" sx={{ my: 2 }}>
-        College Events
+        Planify
       </Typography>
       <Divider />
       <List>
@@ -134,7 +134,7 @@ export default function Header() {
                 alignItems: 'center',
               }}
             >
-              College Events
+              Planify
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>

@@ -21,17 +21,21 @@ export interface EventData {
   id: string;
   title: string;
   description: string;
-  image: string;
   startDate: string;
   endDate: string;
   location: string;
   category: string;
-  status: 'upcoming' | 'ongoing' | 'completed';
-  participantLimit: number;
+  status: string;
+  participantsLimit: number;
   currentParticipants: number;
-  points: number;
-  festName: string;
-  festOrganizer: string;
+  pointsAwarded: number;
+  organizerName: string;
+  image?: string;
+  imageUrl?: string;
+  participantLimit?: number;
+  points?: number;
+  festName?: string;
+  festOrganizer?: string;
 }
 
 interface EventCardProps {

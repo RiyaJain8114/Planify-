@@ -93,6 +93,7 @@ export default function EventApprovalsPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [comments, setComments] = useState('');
+  const [events, setEvents] = useState(mockEvents);
 
   const handleReviewClick = (event: any) => {
     setSelectedEvent(event);
@@ -100,13 +101,27 @@ export default function EventApprovalsPage() {
   };
 
   const handleApprove = () => {
-    console.log('Approving event:', selectedEvent.id);
+    const updatedEvents = events.map(event => 
+      event.id === selectedEvent.id 
+        ? { ...event, status: 'approved' } 
+        : event
+    );
+    setEvents(updatedEvents);
+    setSelectedEvent({ ...selectedEvent, status: 'approved' });
     setReviewDialogOpen(false);
+    setComments('');
   };
 
   const handleReject = () => {
-    console.log('Rejecting event:', selectedEvent.id);
+    const updatedEvents = events.map(event => 
+      event.id === selectedEvent.id 
+        ? { ...event, status: 'rejected' } 
+        : event
+    );
+    setEvents(updatedEvents);
+    setSelectedEvent({ ...selectedEvent, status: 'rejected' });
     setReviewDialogOpen(false);
+    setComments('');
   };
 
   const getStatusChip = (status: string) => {
@@ -122,7 +137,7 @@ export default function EventApprovalsPage() {
     }
   };
 
-  const filteredEvents = mockEvents.filter(event => {
+  const filteredEvents = events.filter(event => {
     if (filterStatus !== 'all' && event.status !== filterStatus) return false;
     if (searchQuery && !event.title.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
@@ -277,6 +292,9 @@ export default function EventApprovalsPage() {
                   <Typography variant="h6" gutterBottom>
                     {selectedEvent.title}
                   </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    {getStatusChip(selectedEvent.status)}
+                  </Box>
                   <Typography variant="body2" color="text.secondary" paragraph>
                     {selectedEvent.description}
                   </Typography>
@@ -348,10 +366,19 @@ export default function EventApprovalsPage() {
             </DialogContent>
             <DialogActions>
               <Button onClick={() => setReviewDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleReject} color="error">
+              <Button 
+                onClick={handleReject} 
+                color="error"
+                disabled={selectedEvent?.status === 'rejected'}
+              >
                 Reject
               </Button>
-              <Button onClick={handleApprove} variant="contained" color="success">
+              <Button 
+                onClick={handleApprove} 
+                variant="contained" 
+                color="success"
+                disabled={selectedEvent?.status === 'approved'}
+              >
                 Approve
               </Button>
             </DialogActions>

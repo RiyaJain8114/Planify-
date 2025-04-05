@@ -32,7 +32,6 @@ import AddIcon from '@mui/icons-material/Add';
 import SearchIcon from '@mui/icons-material/Search';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
-import Layout from '@/components/layout/Layout';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 
 // Mock data
@@ -117,104 +116,153 @@ export default function PoliciesPage() {
 
   return (
     <ProtectedRoute allowedRoles={['COLLEGE_AUTHORITY']}>
-      <Layout>
-        <Container maxWidth="lg" sx={{ py: 8 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-            <Typography variant="h4" component="h1">
-              Policies & Guidelines
-            </Typography>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setAddDialogOpen(true)}
-            >
-              Add New Policy
-            </Button>
-          </Box>
+      <Container maxWidth="lg" sx={{ py: 8 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
+          <Typography variant="h4" component="h1">
+            Policies & Guidelines
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setAddDialogOpen(true)}
+          >
+            Add New Policy
+          </Button>
+        </Box>
 
-          <Paper sx={{ mb: 4, p: 2 }}>
-            <TextField
-              fullWidth
-              size="small"
-              placeholder="Search policies..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Paper>
+        <Paper sx={{ mb: 4, p: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search policies..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Paper>
 
-          <Grid container spacing={3}>
-            {filteredPolicies.map((policy) => (
-              <Grid item xs={12} key={policy.id}>
-                <Card>
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <Box>
-                        <Typography variant="h6" gutterBottom>
-                          {policy.title}
-                        </Typography>
-                        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                          <Chip
-                            icon={<PolicyIcon />}
-                            label={policy.category}
-                            size="small"
-                          />
-                          <Chip
-                            icon={<CalendarMonthIcon />}
-                            label={`Updated: ${policy.lastUpdated}`}
-                            size="small"
-                          />
-                        </Box>
-                      </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <IconButton onClick={() => handleEditClick(policy)}>
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton onClick={() => handleDeleteClick(policy)} color="error">
-                          <DeleteIcon />
-                        </IconButton>
+        <Grid container spacing={3}>
+          {filteredPolicies.map((policy) => (
+            <Grid item xs={12} key={policy.id}>
+              <Card>
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        {policy.title}
+                      </Typography>
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                        <Chip
+                          icon={<PolicyIcon />}
+                          label={policy.category}
+                          size="small"
+                        />
+                        <Chip
+                          icon={<CalendarMonthIcon />}
+                          label={`Updated: ${policy.lastUpdated}`}
+                          size="small"
+                        />
                       </Box>
                     </Box>
+                    <Box sx={{ display: 'flex', gap: 1 }}>
+                      <IconButton onClick={() => handleEditClick(policy)}>
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton onClick={() => handleDeleteClick(policy)} color="error">
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  </Box>
 
-                    <Typography
-                      variant="body2"
-                      component="pre"
-                      sx={{
-                        whiteSpace: 'pre-wrap',
-                        fontFamily: 'inherit',
-                        my: 2,
-                      }}
-                    >
-                      {policy.content}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                  <Typography
+                    variant="body2"
+                    component="pre"
+                    sx={{
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'inherit',
+                      my: 2,
+                    }}
+                  >
+                    {policy.content}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* Add Policy Dialog */}
+        <Dialog
+          open={addDialogOpen}
+          onClose={() => setAddDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Add New Policy</DialogTitle>
+          <DialogContent>
+            <Grid container spacing={2} sx={{ mt: 1 }}>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Policy Title"
+                  value={newPolicy.title}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, title: e.target.value })}
+                  required
+                />
               </Grid>
-            ))}
-          </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  label="Category"
+                  value={newPolicy.category}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, category: e.target.value })}
+                  required
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={6}
+                  label="Policy Content"
+                  value={newPolicy.content}
+                  onChange={(e) => setNewPolicy({ ...newPolicy, content: e.target.value })}
+                  required
+                  placeholder="Enter policy content..."
+                />
+              </Grid>
+            </Grid>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddPolicy} variant="contained">
+              Add Policy
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-          {/* Add Policy Dialog */}
-          <Dialog
-            open={addDialogOpen}
-            onClose={() => setAddDialogOpen(false)}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle>Add New Policy</DialogTitle>
-            <DialogContent>
+        {/* Edit Policy Dialog */}
+        <Dialog
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Edit Policy</DialogTitle>
+          <DialogContent>
+            {selectedPolicy && (
               <Grid container spacing={2} sx={{ mt: 1 }}>
                 <Grid item xs={12}>
                   <TextField
                     fullWidth
                     label="Policy Title"
-                    value={newPolicy.title}
-                    onChange={(e) => setNewPolicy({ ...newPolicy, title: e.target.value })}
+                    defaultValue={selectedPolicy.title}
                     required
                   />
                 </Grid>
@@ -222,8 +270,7 @@ export default function PoliciesPage() {
                   <TextField
                     fullWidth
                     label="Category"
-                    value={newPolicy.category}
-                    onChange={(e) => setNewPolicy({ ...newPolicy, category: e.target.value })}
+                    defaultValue={selectedPolicy.category}
                     required
                   />
                 </Grid>
@@ -233,88 +280,38 @@ export default function PoliciesPage() {
                     multiline
                     rows={6}
                     label="Policy Content"
-                    value={newPolicy.content}
-                    onChange={(e) => setNewPolicy({ ...newPolicy, content: e.target.value })}
+                    defaultValue={selectedPolicy.content}
                     required
-                    placeholder="Enter policy content..."
                   />
                 </Grid>
               </Grid>
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setAddDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleAddPolicy} variant="contained">
-                Add Policy
-              </Button>
-            </DialogActions>
-          </Dialog>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdatePolicy} variant="contained">
+              Save Changes
+            </Button>
+          </DialogActions>
+        </Dialog>
 
-          {/* Edit Policy Dialog */}
-          <Dialog
-            open={editDialogOpen}
-            onClose={() => setEditDialogOpen(false)}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle>Edit Policy</DialogTitle>
-            <DialogContent>
-              {selectedPolicy && (
-                <Grid container spacing={2} sx={{ mt: 1 }}>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Policy Title"
-                      defaultValue={selectedPolicy.title}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      label="Category"
-                      defaultValue={selectedPolicy.category}
-                      required
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={6}
-                      label="Policy Content"
-                      defaultValue={selectedPolicy.content}
-                      required
-                    />
-                  </Grid>
-                </Grid>
-              )}
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setEditDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleUpdatePolicy} variant="contained">
-                Save Changes
-              </Button>
-            </DialogActions>
-          </Dialog>
-
-          {/* Delete Confirmation Dialog */}
-          <Dialog
-            open={deleteDialogOpen}
-            onClose={() => setDeleteDialogOpen(false)}
-          >
-            <DialogTitle>Delete Policy</DialogTitle>
-            <DialogContent>
-              Are you sure you want to delete {selectedPolicy?.title}? This action cannot be undone.
-            </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleDeleteConfirm} color="error" variant="contained">
-                Delete
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </Container>
-      </Layout>
+        {/* Delete Confirmation Dialog */}
+        <Dialog
+          open={deleteDialogOpen}
+          onClose={() => setDeleteDialogOpen(false)}
+        >
+          <DialogTitle>Delete Policy</DialogTitle>
+          <DialogContent>
+            Are you sure you want to delete {selectedPolicy?.title}? This action cannot be undone.
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleDeleteConfirm} color="error" variant="contained">
+              Delete
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Container>
     </ProtectedRoute>
   );
 } 

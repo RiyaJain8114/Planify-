@@ -64,7 +64,7 @@ interface ResourceBooking {
   event: string;
   date: string;
   society: string;
-  status: 'confirmed' | 'pending';
+  status: 'confirmed' | 'pending' | 'rejected';
 }
 
 interface Resource {
@@ -161,6 +161,7 @@ export default function ResourcesPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
   const [activeTab, setActiveTab] = useState(0);
+  const [resources, setResources] = useState<Resource[]>(initialResources);
 
   const handleEditResource = (resource: Resource) => {
     setSelectedResource(resource);
@@ -182,6 +183,120 @@ export default function ResourcesPage() {
     console.log('Updating resource:', selectedResource?.id);
     setEditDialogOpen(false);
   };
+
+  const handleApproveBooking = (resourceId: string, bookingId: string) => {
+    const updatedResources = resources.map(resource =>
+      resource.id === resourceId
+        ? {
+            ...resource,
+            bookings: resource.bookings.map(booking =>
+              booking.id === bookingId
+                ? { ...booking, status: 'confirmed' }
+                : booking
+            )
+          }
+        : resource
+    );
+    setResources(updatedResources);
+    // Update the selected resource if it's currently being viewed
+    if (selectedResource?.id === resourceId) {
+      setSelectedResource({
+        ...selectedResource,
+        bookings: selectedResource.bookings.map(booking =>
+          booking.id === bookingId
+            ? { ...booking, status: 'confirmed' }
+            : booking
+        )
+      });
+    }
+  };
+
+  const handleRejectBooking = (resourceId: string, bookingId: string) => {
+    const updatedResources = resources.map(resource =>
+      resource.id === resourceId
+        ? {
+            ...resource,
+            bookings: resource.bookings.map(booking =>
+              booking.id === bookingId
+                ? { ...booking, status: 'rejected' }
+                : booking
+            )
+          }
+        : resource
+    );
+    setResources(updatedResources);
+    // Update the selected resource if it's currently being viewed
+    if (selectedResource?.id === resourceId) {
+      setSelectedResource({
+        ...selectedResource,
+        bookings: selectedResource.bookings.map(booking =>
+          booking.id === bookingId
+            ? { ...booking, status: 'rejected' }
+            : booking
+        )
+      });
+    }
+  };
+
+  const renderBookingStatusChip = (status: ResourceBooking['status']) => {
+    const statusConfig = {
+      confirmed: { icon: <CheckCircleIcon />, label: 'Confirmed', color: 'success' as const },
+      pending: { icon: <WarningIcon />, label: 'Pending', color: 'warning' as const },
+      rejected: { icon: <WarningIcon />, label: 'Rejected', color: 'error' as const },
+    };
+
+    const config = statusConfig[status];
+    return config ? <Chip icon={config.icon} label={config.label} color={config.color} size="small" /> : null;
+  };
+
+  const renderResourceBookings = (resource: Resource) => (
+    <>
+      <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 500 }}>
+        Current Bookings
+      </Typography>
+      <List>
+        {resource.bookings.map((booking) => (
+          <ListItem
+            key={booking.id}
+            secondaryAction={
+              booking.status === 'pending' && (
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="success"
+                    onClick={() => handleApproveBooking(resource.id, booking.id)}
+                    disabled={booking.status !== 'pending'}
+                  >
+                    Approve
+                  </Button>
+                  <Button
+                    size="small"
+                    variant="contained"
+                    color="error"
+                    onClick={() => handleRejectBooking(resource.id, booking.id)}
+                    disabled={booking.status !== 'pending'}
+                  >
+                    Reject
+                  </Button>
+                </Box>
+              )
+            }
+          >
+            <ListItemText
+              primary={
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Typography>{booking.event}</Typography>
+                  {renderBookingStatusChip(booking.status)}
+                </Box>
+              }
+              secondary={`${booking.society} • ${booking.date}`}
+            />
+          </ListItem>
+        ))}
+      </List>
+    </>
+  );
 
   const renderStatusChip = (status: Resource['status']) => {
     const statusConfig = {
@@ -509,56 +624,7 @@ export default function ResourcesPage() {
 
                   <Divider sx={{ my: 2 }} />
 
-                  <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 500 }}>
-                    Current Bookings
-                  </Typography>
-                  {resource.bookings.length > 0 ? (
-                    <List dense>
-                      {resource.bookings.map((booking) => (
-                        <ListItem 
-                          key={booking.id}
-                          sx={{
-                            borderRadius: 1,
-                            mb: 1,
-                            '&:hover': {
-                              backgroundColor: alpha(theme.palette.primary.main, 0.04),
-                            },
-                          }}
-                        >
-                          <ListItemIcon>
-                            <EventIcon color="action" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={booking.event}
-                            secondary={`${booking.society} • ${booking.date}`}
-                            primaryTypographyProps={{
-                              fontWeight: 500,
-                            }}
-                          />
-                          <Chip
-                            label={booking.status}
-                            color={booking.status === 'confirmed' ? 'success' : 'warning'}
-                            size="small"
-                            sx={{ 
-                              borderRadius: 1,
-                              '&.MuiChip-colorSuccess': {
-                                backgroundColor: alpha(theme.palette.success.main, 0.1),
-                                color: theme.palette.success.dark,
-                              },
-                              '&.MuiChip-colorWarning': {
-                                backgroundColor: alpha(theme.palette.warning.main, 0.1),
-                                color: theme.palette.warning.dark,
-                              },
-                            }}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  ) : (
-                    <Typography variant="body2" color="text.secondary">
-                      No current bookings
-                    </Typography>
-                  )}
+                  {renderResourceBookings(resource)}
                 </CardContent>
               </Card>
             </Grid>
