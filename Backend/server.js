@@ -1,30 +1,47 @@
 require("dotenv").config();
-const connectDB = require('./config/db');
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const authRoutes = require("./routes/authRoutes"); 
+const connectDB = require("./config/db");
 
+// Import routes
+const eventRoutes = require("./routes/eventRoutes");
+const societyRoutes = require("./routes/societyRoutes");
+const resourceRoutes = require("./routes/resourceRoutes");
+const policyRoutes = require("./routes/policyRoutes");
+// const approvalRoutes = require("./routes/approvalRoutes");
+// const chatbotRoutes = require("./routes/chatbotRoutes");
+// const analyticsRoutes = require("./routes/analyticsRoutes");
 
 const app = express();
 
-// Middleware to handle CORS
-app.use(
-  cors({
-    origin: process.env.CLIENT_URL || "*",
-    methods: ["GET", "POST", "PUT", "DELETE"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+// ✅ Use CORS middleware properly
+const corsOptions = {
+  origin: "http://localhost:3000", // your frontend
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+app.use(cors(corsOptions));
 
+// ✅ Body parsers
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
+// ✅ Connect to MongoDB
 connectDB();
 
-app.use("/api/v1/auth", authRoutes);
+// ✅ Mount routes
+app.use("/api/event", eventRoutes);
+app.use("/api/societies", societyRoutes);
+app.use("/api/policies", policyRoutes);
+app.use("/api/resource", resourceRoutes);
 
-//serve uploads folder
-app.use("/uploads",express.static(path.join(__dirname,"uploads")));
+// app.use("/api/approval", approvalRoutes);
+// app.use("/api/chat", chatbotRoutes);
+// app.use("/api/analytics", analyticsRoutes);
 
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+

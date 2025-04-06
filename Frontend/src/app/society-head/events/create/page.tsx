@@ -21,6 +21,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
 
 // Event categories
 const categories = [
@@ -31,7 +32,7 @@ const categories = [
   'Workshop',
   'Seminar',
   'Competition',
-  'Other'
+  'Other',
 ];
 
 interface EventFormData {
@@ -44,7 +45,6 @@ interface EventFormData {
   maxParticipants: string;
   requirements: string[];
   budget: string;
-  sponsorshipNeeded: boolean;
 }
 
 const CreateEventPage = () => {
@@ -59,52 +59,65 @@ const CreateEventPage = () => {
     maxParticipants: '',
     requirements: [],
     budget: '',
-    sponsorshipNeeded: false,
   });
 
   const [newRequirement, setNewRequirement] = useState('');
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   const handleCategoryChange = (event: SelectChangeEvent) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      category: event.target.value
+      category: event.target.value,
     }));
   };
-  
+
   const handleAddRequirement = () => {
     if (newRequirement.trim()) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        requirements: [...prev.requirements, newRequirement.trim()]
+        requirements: [...prev.requirements, newRequirement.trim()],
       }));
       setNewRequirement('');
     }
   };
-  
+
   const handleRemoveRequirement = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      requirements: prev.requirements.filter((_, i) => i !== index)
+      requirements: prev.requirements.filter((_, i) => i !== index),
     }));
   };
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Here you would typically make an API call to save the event
-    console.log('Event data to be saved:', formData);
-    
-    // For now, just show a success message and redirect
-    alert('Event created successfully!');
-    router.push('/society-head/events/my-events');
+
+    try {
+      const eventData = {
+        ...formData,
+        startDate: formData.startDate?.toISOString(),
+        endDate: formData.endDate?.toISOString(),
+        maxParticipants: parseInt(formData.maxParticipants),
+        budget: parseFloat(formData.budget),
+        createdBy: '66051c6c51b7c5f3dcf3ba95', // Replace with actual user ID dynamically
+      };
+
+      const response = await axios.post('http://localhost:5000/api/event', eventData);
+
+      if (response.status === 201) {
+        alert('Event created successfully!');
+        router.push('/society-head/events/my-events');
+      }
+    } catch (error: any) {
+      console.error('Error creating event:', error.response?.data || error.message);
+      alert('Failed to create event. Please try again.');
+    }
   };
 
   return (
@@ -113,7 +126,7 @@ const CreateEventPage = () => {
         <Typography variant="h4" component="h1" gutterBottom>
           Create New Event
         </Typography>
-        
+
         <form onSubmit={handleSubmit}>
           <Grid container spacing={3}>
             <Grid item xs={12}>
@@ -126,7 +139,7 @@ const CreateEventPage = () => {
                 required
               />
             </Grid>
-        
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -163,31 +176,31 @@ const CreateEventPage = () => {
                 <DateTimePicker
                   label="Start Date & Time"
                   value={formData.startDate}
-                  onChange={(newValue) => setFormData(prev => ({ ...prev, startDate: newValue }))}
+                  onChange={(newValue) => setFormData((prev) => ({ ...prev, startDate: newValue }))}
                   slotProps={{
                     textField: {
                       fullWidth: true,
-                      required: true
-                    }
+                      required: true,
+                    },
                   }}
                 />
               </Grid>
-            
+
               <Grid item xs={12} sm={6}>
                 <DateTimePicker
                   label="End Date & Time"
                   value={formData.endDate}
-                  onChange={(newValue) => setFormData(prev => ({ ...prev, endDate: newValue }))}
+                  onChange={(newValue) => setFormData((prev) => ({ ...prev, endDate: newValue }))}
                   slotProps={{
                     textField: {
                       fullWidth: true,
-                      required: true
-                    }
+                      required: true,
+                    },
                   }}
                 />
               </Grid>
             </LocalizationProvider>
-        
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -254,16 +267,10 @@ const CreateEventPage = () => {
 
             <Grid item xs={12}>
               <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                <Button
-                  variant="outlined"
-                  onClick={() => router.back()}
-                >
+                <Button variant="outlined" onClick={() => router.back()}>
                   Cancel
                 </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                >
+                <Button type="submit" variant="contained">
                   Create Event
                 </Button>
               </Box>
@@ -275,4 +282,6 @@ const CreateEventPage = () => {
   );
 };
 
-export default CreateEventPage; 
+export default CreateEventPage;
+
+
